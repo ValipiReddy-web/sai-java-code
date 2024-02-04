@@ -10,6 +10,12 @@ pipeline {
                  
             }
         }
+        stage('Load user Jenkinsfile') {
+            agent any
+            steps {
+                load 'Jenkinsfile'
+            }
+        }
 
         stage ('Testing Stage') {
 
