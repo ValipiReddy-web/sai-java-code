@@ -1,17 +1,20 @@
 name: Simple Workflow
-
+#Control when the workflow is run or events options
 on:
+#Trigger the workflow on push or pull request event but only for the main branch
   push:
     branches:
       - main
   pull_request:
     branches: [ "main" ]
+  #Allow you run this workflow manually from the action tab
   workflow_dispatch:
-
+#Work flow  run is made up of one or more job that can sequentially or parallel 
 jobs:
+# this workflow contain single job called "build"
   build:
     runs-on: self-hosted
-
+#Steps a represent sequence of task that will be executed as part of the job
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
