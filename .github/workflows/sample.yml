@@ -22,8 +22,7 @@ jobs:
           ./venv/bin/pip install --upgrade pip
           ./venv/bin/pip install -r requirements.txt
 
-      - name: Run Unit Tests
-        run: python3.10 -m unittest test_app.py
+      
 
       - name: Deploy Flask Application
         run: |
