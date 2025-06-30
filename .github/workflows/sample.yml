@@ -33,7 +33,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          ./venv/bin/python -m unittest test_app.py
+          python -m unittest test_app.py
 
       - name: Deploy Flask Application
         run: |
