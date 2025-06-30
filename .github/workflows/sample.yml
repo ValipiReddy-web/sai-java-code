@@ -1,0 +1,25 @@
+name: Simple Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run a shell command
+        run: echo "🎉 Hello from GitHub Actions!"
+
+      - name: Run multiple shell commands
+        run: |
+          echo "Step 1: Update packages"
+          echo "hi sai"
