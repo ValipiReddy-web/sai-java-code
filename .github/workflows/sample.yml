@@ -1,48 +1,162 @@
-name: Deploy Flask App
-
+name: deployment
+run-name: Deploy instance - ${{ inputs.project }}
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      project:
+        type: string
+        description: GCP project to use
+        required: true
+      site_name:
+        type: string
+        description: Additional site (Customer exposure)
+        required: true
+      customer_name:
+        type: string
+        description: Customer Name
+        required: true
+      customer_email_list:
+        type: string
+        description: Customer Admins Email List, command separated values
+        required: true
+      licensedetails:
+        type: string
+        description: Flexera or Thales Details in JSON Format (FLEXERA,THALES)
+        required: true
+      regiondetails:
+        type: string
+        description: Deployment Region Details in JSON Format  (CLOUDFUNCTION_REGION, RTDB_REGION, BQ_REGION)
+        required: true
+      smtp_password:
+        type: string
+        description: SMTP Password - Sendgrid
+        required: true
+      exchange_subscriber_service_account:
+          type: string
+          description: Exchange Subscriber Service Account - Analytics Hub
+          required: false
+      dgpro:
+        type: boolean
+        description: Enable DGPro features?
+        required: false
+      dgam_feature:
+        type: boolean
+        description: Enable DGAM feature?
+        required: false
 
+# Define global env vars
 env:
-  HEALTHCHECK_URL: http://35.154.189.47:50000
+  GCP_PROJECT_ID: ${{ inputs.project }}
+  SITE_NAME: ${{ inputs.site_name }}
+  CUSTOMER_NAME: ${{ inputs.customer_name }}
+  CUSTOMER_EMAIL_LIST: ${{ inputs.customer_email_list }}
+  SMTP_PASSWORD: ${{ inputs.smtp_password }}
+  EXCHANGE_SUBSCRIBER_SERVICE_ACCOUNT: ${{ inputs.exchange_subscriber_service_account }}
+  DGPRO: ${{ inputs.dgpro }}
+  # Dummy Tenant ID (resolve the replacing with blank tenant id at first time of region replacement)
+  TENANT_ID_TOKEN: "$TENANT_ID_TOKEN"
+  CI: "false" # <---- Required even though we are using CI/CD, otherwise it will treat warnings as errors
+  ADMIN_USER: "dtrkadmin@zebra.com"
+  CUSTOMER_USER: "ngdtrk_admin@zebra.com"
+  DOGFOODFLAG: "false"
+  DLR_FEATURE_FLAG: "true"
+  ANALYTICS_EXCHANGE_FLAG: "false"
+  IG_LOGOUT_FLAG: "true"
+  LICENSEDETAILS: ${{ inputs.licensedetails }}
+  ENABLE_DGAM: ${{ inputs.dgam_feature }}
 
 jobs:
-  Build-test-deploy:
-    runs-on: self-hosted
+  deploy:
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Create virtual environment & install dependencies
-        run: |
-          python3.10 -m venv venv
-          ./venv/bin/pip install --upgrade pip
-          ./venv/bin/pip install -r requirements.txt
-
+      # parse the JSON input into env  
+      - name: Setup Region inputs from json
+        id: region-inputs
+        run: echo '${{ inputs.regiondetails }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' | xargs -I '{}' echo "{}" >> "$GITHUB_ENV"
       
+      # Get the repo content
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      - name: Deploy Flask Application
+      # Install Python3.10
+      - name: Set Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      # Set Nodejs14 up
+      - name: Set Nodejs 20
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+      
+      # Enable GCP access
+      - name: Set up GCP access
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      # Configure GCP CLI
+      - name: 'Set up GCP SDK'
+        uses: 'google-github-actions/setup-gcloud@v0'
+
+      # Install firebase CLI
+      - name: Install Firebase
         run: |
-          nohup ./venv/bin/python app.py > flask.log 2>&1 &
+          npm install -g firebase-tools@13.29.1
 
-  health:
-    needs: Build-test-deploy
-    runs-on: self-hosted
-
-    steps:
-      - name: Health check
+      - name: Install dependencies
         run: |
-          for i in {1..10}; do
-            status=$(curl -s -o /dev/null -w "%{http_code}" $HEALTHCHECK_URL)
-            if [ "$status" == "200" ]; then
-              echo "✅ Health check passed"
-              exit 0
-            fi
-            echo "Waiting for service... ($i/10)"
-            sleep 5
-          done
-          echo "❌ Health check failed after multiple retries"
-          exit 1
+          pip install -r requirements.txt
+
+      # Execute configuration script
+      - name: Configure deployment
+        run: |
+          python3 configure.py
+
+      # Execute configuration script for flexera or thales
+      - name: Configure flexera or thales
+        run: |
+          python3 configure_license.py    
+      
+      # Create Android, iOS and Webapp
+      - name: Create Apps
+        run: |
+          python3 create_apps.py
+
+      # Deploy CloudFunctions
+      - name: Deploy Functions, Rules and Server
+        run: |
+          python3 deploy_functions.py
+
+      # Create Users
+      - name: Create Users
+        run: |
+          python3 create_users.py
+
+      # Postdeployment script
+      - name: Execute Postdeployment script
+        run: |
+          python3 postdeployment.py
+
+      # Set Nodejs14 up
+      - name: Set Nodejs 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+
+      # Install firebase CLI
+      - name: Install Firebase
+        run: |
+          npm install -g firebase-tools@9.21.0
+          
+      # Deploy Web portal
+      - name: Deploy Web portal
+        run: |
+          python3 deploywebportal.py
+
+      # Create Analytics Exchange script
+      - name: Execute Create Analytics Exchange script
+        run: |
+          python3 create_analytics_exchange.py
