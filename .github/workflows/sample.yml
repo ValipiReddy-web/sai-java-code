@@ -25,15 +25,13 @@ jobs:
       #     python-version: '3.10.14'
 
       - name: Create virtual environment & install dependencies
-        run: |
-          python3.10 -m venv venv
-          source venv/bin/activate
-          ./venv/bin/pip install --upgrade pip
-          ./venv/bin/pip install -r requirements.txt
+  run: |
+    python3.10 -m venv venv
+    ./venv/bin/pip install --upgrade pip
+    ./venv/bin/pip install -r requirements.txt
 
       - name: Run Unit Tests
-        run: |
-          python -m unittest test_app.py
+        run: ./venv/bin/python -m unittest test_app.py
 
       - name: Deploy Flask Application
         run: |
