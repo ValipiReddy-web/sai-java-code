@@ -1,9 +1,17 @@
-FROM ubuntu:20.04 
-MAINTAINER "info@wiculty.com"
-RUN apt-get update
-RUN apt-get install -y openjdk-11-jdk
-ENV JAVA_HOME /usr
-ADD apache-tomcat-8.5.38.tar.gz /root
-COPY target/gamutkart.war /root/apache-tomcat-8.5.38/webapps
-ENTRYPOINT /root/apache-tomcat-8.5.38/bin/startup.sh && bash
+# Use official Tomcat 10 image with OpenJDK 17
+FROM tomcat:10.1-jdk17-temurin
 
+# Maintainer info
+LABEL maintainer="info@wiculty.com"
+
+# Remove default ROOT app to deploy your WAR at root context
+RUN rm -rf /usr/local/tomcat/webapps/ROOT
+
+# Copy your WAR as ROOT.war
+COPY target/saikart.war /usr/local/tomcat/webapps
+
+# Expose Tomcat port
+EXPOSE 8080
+
+# Start Tomcat in foreground (required for Docker)
+CMD ["catalina.sh", "run"]

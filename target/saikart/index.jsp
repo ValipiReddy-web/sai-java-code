@@ -28,7 +28,7 @@
 
 		<header>
 			<h1>Sai Gurus DevOps & Cloud Learning Platform</h1> 
-			<h4>Contact: +91-9620836466 Email: saipersonal.666@gmail.com</h4> 
+			<h4>Contact: +91-9148113357 Email: saipersonal.666@gmail.com</h4> 
 		</header>
 
 		<div id="tabs">
