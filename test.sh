@@ -1,1 +1,1 @@
-echo "test.sh files"
+echo "cloud build"
