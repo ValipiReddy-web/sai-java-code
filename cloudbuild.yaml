@@ -18,7 +18,7 @@ steps:
   - push
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/java-app/app:$SHORT_SHA'
 
-# Deploy to Cloud Run (example)
+# Deploy to Cloud Run
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: gcloud
   args:
@@ -31,5 +31,8 @@ steps:
   - '--allow-unauthenticated'
 
 images:
-- us-central1-docker.pkg.dev/$PROJECT_ID/java-app/app:$SHORT_SHA
+- 'us-central1-docker.pkg.dev/$PROJECT_ID/java-app/app:$SHORT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
 
